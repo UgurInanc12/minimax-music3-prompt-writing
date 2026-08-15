@@ -1,39 +1,41 @@
-# MiniMax Music 3 — Prompting Guide (tam distillenmiş)
+# MiniMax Music 3: Prompting Guide (fully distilled)
 
-Kaynaklar (2026-08-15'te okundu):
+Sources (read 2026-08-15):
 - Comfy tutorial: https://docs.comfy.org/tutorials/audio/minimax/minimax-music-3
 - Prompting guide Space: https://huggingface.co/spaces/multimodalart/minimax-music3-prompting-guide
-  (statik space; içerik `index.html`'den çıkarıldı, "Based on the official MiniMax Music 3
-  prompting guide and caption library" ibaresiyle resmi rehberin yeniden yayını)
-- Resmi repo README: https://huggingface.co/MiniMaxAI/MiniMax-Music3
+  (static space; content extracted from `index.html`, a republication of the official
+  guide bearing the note "Based on the official MiniMax Music 3 prompting guide and
+  caption library")
+- Official repo README: https://huggingface.co/MiniMaxAI/MiniMax-Music3
 
-## 1. İki giriş — rolleri ayır
+## 1. The two inputs: keep their roles separate
 
-Her üretim TAM OLARAK iki metinle sürülür; rolleri karıştırma.
+Every generation is driven by EXACTLY two texts; do not mix their roles.
 
-**Lyrics**: söylenecek sözler + köşeli parantez bölüm tag'leri. Tag'ler YÜRÜTÜLEBİLİR
-direktiflerdir; söz metni yalnızca kelimeleri ve duygusal ağırlığı taşır.
+**Lyrics**: the words to be sung + square-bracket section tags. Tags are EXECUTABLE
+directives; the lyric text only carries the words and the emotional weight.
 
-**Caption (structured)**: müzik tanımı — genre, tempo, duygusal yay, vokal performansı,
-bölüm bölüm aranjman. Tüm müzikal kontrol buradadır; model onu ZAMAN İÇİNDE takip eder,
-tek global etiket olarak değil.
+**Caption (structured)**: the music description: genre, tempo, emotional arc, vocal
+performance, section-by-section arrangement. All musical control lives here; the model
+follows it OVER TIME, not as a single global tag.
 
-## 2. Lyrics ve bölüm tag'leri
+## 2. Lyrics and section tags
 
-Tag'ler: `[intro] [verse] [pre-chorus] [chorus] [post-chorus] [bridge]
+Tags: `[intro] [verse] [pre-chorus] [chorus] [post-chorus] [bridge]
 [instrumental] [solo] [outro]`
 
-KURALLAR:
-- Her tag KENDİ SATIRINDA. Tag ile aynı satırdaki metin modelin input contract'ı
-  gereği SESSİZCE SİLİNİR: `[verse] Morning light...` → sözler kaybolur.
-- Tag, kendi bölümünün LOKAL aranjmanını değiştirebilir (örn. `[solo]`) ama şarkının
-  global genre'ını değiştirmez.
-- Yapı yönlendirmedir, GARANTİ değil: tag'ler düzeni yönlendirir, model içinde serbest
-  besteler.
-- Süre ÜST SINIRDIR: model sözler tükenince stop-token ile doğal bitirir. Kısa lyrics =
-  kısa şarkı; tam 5 dakikalık şarkı, tam şarkılık bölüm/söz ister.
+RULES:
+- Each tag ON ITS OWN LINE. Text on the same line as a tag is SILENTLY DELETED by the
+  model's input contract: `[verse] Morning light...` → the words are lost.
+- A tag can change the LOCAL arrangement of its own section (e.g. `[solo]`) but does
+  not change the song's global genre.
+- Structure is guidance, NOT a guarantee: tags steer the layout, and the model composes
+  freely within it.
+- Duration is an UPPER BOUND: the model ends naturally with a stop-token when the
+  lyrics run out. Short lyrics = short song; a full 5-minute song needs a full song's
+  worth of sections/words.
 
-Örnek:
+Example:
 ```
 [intro]
 
@@ -50,82 +52,87 @@ We are made of sound and time
 [outro]
 ```
 
-## 3. Yapılandırılmış caption — TAM 3 başlık, bu sırada, ~250–450 kelime
+## 3. The structured caption: EXACTLY 3 sections, in this order, ~250–450 words
 
 ### Global Metadata
-1. **Basic Attributes** — genre + subgenre, tempo; key/scale SADECE gerçekten
-   istendiğinde: `"bpm is 122. key is G, and scale is minor. Disco / Funk Pop."`
-2. **Global Emotional Progression** — şarkının duygusal yayı HİKAYE olarak:
-   nereden başlar, nerede zirve yapar, nasıl çözülür.
-3. **Application Scenarios & Imagery** — şarkının ait olduğu sahne (gece sürüşü,
-   loş oda, çatı geri sayımı). Sahne, sıfatlardan iyi mood çıpalar.
-4. **Sonics & Production Profile** — mix karakteri: stereo genişliği, frekans dengesi,
-   dinamikler (polished/compressed ↔ natural/uncompressed).
+1. **Basic Attributes**: genre + subgenre, tempo; key/scale ONLY when truly wanted:
+   `"bpm is 122. key is G, and scale is minor. Disco / Funk Pop."`
+2. **Global Emotional Progression**: the song's emotional arc AS A STORY: where it
+   starts, where it peaks, how it resolves.
+3. **Application Scenarios & Imagery**: the scene the song belongs to (night drive,
+   dimly lit room, rooftop countdown). A scene anchors mood better than adjectives.
+4. **Sonics & Production Profile**: mix character: stereo width, frequency balance,
+   dynamics (polished/compressed ↔ natural/uncompressed).
 
 ### Vocal Details
-1. **Vocal Gender & Timbre** — daima açıkça (`"Singer A (Female), a warm mezzo-soprano
-   with a breathy low register"`). Vokal belirtilmemesi → istenmeyen enstrümantal
-   drift'in 1 numaralı sebebi.
-2. **Vocal Style** — bölüm başına delivery/dinamik (verse'te yumuşak yakın mikrofon,
-   chorus'ta belted).
-3. **Harmony/Backing Vocals** — double, stacked harmoni, call-and-response + nerede.
-4. **Vocal FX** — ölçülü: reverb, delay throw, saturation; her biri nerede.
-5. Enstrümantal müzikte: açıkça enstrümantal olduğunu yaz + lead melodiyi taşıyan
-   enstrümanı adlandır.
+1. **Vocal Gender & Timbre**: always explicit (`"Singer A (Female), a warm mezzo-soprano
+   with a breathy low register"`). Omitting the vocal is the #1 cause of unwanted
+   instrumental drift.
+2. **Vocal Style**: delivery/dynamics per section (soft close-mic in the verse, belted
+   in the chorus).
+3. **Harmony/Backing Vocals**: doubles, stacked harmonies, call-and-response + where.
+4. **Vocal FX**: in moderation: reverb, delay throw, saturation; each one, and where.
+5. For instrumental music: explicitly state that it is instrumental + name the
+   instrument carrying the lead melody.
 
-### Arrangement — timeline, ekipman listesi değil
-1. **Instrument Lifecycle (Primary/Secondary)** — baştan sona ne çıpalar; ne girer,
-   çıkar, dönüşür.
-2. **Groove & Foundation Progression** — ritmik temel + yoğunluk evrimi bölüm bölüm:
-   verse'te davullar ne yapar, chorus'ta ne iner, bridge'te ne çekilir.
-3. **Embellishments, Textures & Spatial FX** — riser, sweep, ear candy, reverb kuyruğu;
-   sadece ilgili yerlerde.
-Her bölümde ne girer/çıkar/değişir/yoğunlaşır yaz; enstrüman davranışı sürekli olsun.
+### Arrangement: a timeline, not an equipment list
+1. **Instrument Lifecycle (Primary/Secondary)**: what anchors from start to finish;
+   what enters, exits, transforms.
+2. **Groove & Foundation Progression**: the rhythmic foundation + density evolution
+   section by section: what the drums do in the verse, what drops in the chorus, what
+   pulls back in the bridge.
+3. **Embellishments, Textures & Spatial FX**: risers, sweeps, ear candy, reverb tails;
+   only where relevant.
+Write what enters/exits/changes/intensifies in every section; keep instrument behavior
+continuous.
 
-## 4. Yazım kuralları
+## 4. Writing rules
 
-- **Sahte hassasiyet uydurma**: BPM/key'i gerçekten istemiyorsan yazma; aralık veya
-  niteliksel tempo ("driving", "unhurried") müzikal alan bırakır.
-- **Kendinle sessizce çelişme**: açık vokal cinsiyeti, zorunlu enstrüman, tempo sınırı,
-  dışlama caption'ın tamamında hayatta kalmalı.
-- **Çelişki önceliği**: açık gereksinimler > bölüm-tag'i direktifleri (kendi bölümünde)
-  > caption ima'ları > genre varsayılanları.
-- **Enerji yayı yaz**: gerilim → çözülme → nefes → zirve hikayesi statik tanımdan iyidir.
-- **Şarkı sözünü caption'a koyma**: caption müziği anlatır; söz lyrics girişindedir.
+- **Do not invent fake precision**: don't state BPM/key unless truly wanted; a range or
+  qualitative tempo ("driving", "unhurried") leaves musical room.
+- **Do not silently contradict yourself**: explicit vocal gender, mandatory instrument,
+  tempo bound, exclusions must survive across the entire caption.
+- **Conflict priority**: explicit requirements > section-tag directives (within their
+  section) > caption implications > genre defaults.
+- **Write an energy arc**: a story of tension → release → breath → peak beats a static
+  description.
+- **Do not put song lyrics in the caption**: the caption describes the music; the words
+  live in the lyrics input.
 
-## 5. Style families (18 aile — resmi kütüphane router'ı)
+## 5. Style families (18 families: the official library router)
 
-~1000 referans caption 18 aileye örgütlüdür. Aileler MODELİN SINIRI DEĞİLDİR;
-tarzları kütüphanenin adlandırma diliyle isimlendirmek için kelime haritasıdır.
-`emotional, epic, dark, modern, cinematic` genre değil MODIFIER'dır.
+The ~1000 reference captions are organized into 18 families. The families are NOT the
+model's limits; they are a word map for naming styles in the library's naming language.
+`emotional, epic, dark, modern, cinematic` is a MODIFIER, not a genre.
 
-| Aile | Kapsam |
+| Family | Scope |
 |---|---|
-| general-pop-ballad | Pop, contemporary pop, pop balad, genel duygusal şarkılar |
+| general-pop-ballad | Pop, contemporary pop, pop ballad, general emotional songs |
 | dance-pop-disco-funk | Dance-pop, nu-disco, funk-pop, disco revival, groove pop |
 | club-edm-house-trance | EDM, house, trance, hardstyle, dubstep, techno, festival |
 | electronic-synth-ambient-pop | Synth-pop, electropop, dream pop, ambient pop, darkwave, retrowave |
 | modern-rnb-neo-soul | Contemporary/alt R&B, neo-soul, trap soul |
 | hip-hop-rap | Hip-hop, rap, trap, drill, lo-fi hip-hop, melodic rap |
 | soul-blues-gospel | Soul, blues, blues rock, gospel, worship |
-| jazz-swing-big-band | Vocal jazz, jazz balad, big band, swing, bossa nova, lounge |
-| traditional-vocal-stage | Crooner, doo-wop, a cappella, müzikal tiyatro, cabaret |
+| jazz-swing-big-band | Vocal jazz, jazz ballad, big band, swing, bossa nova, lounge |
+| traditional-vocal-stage | Crooner, doo-wop, a cappella, musical theater, cabaret |
 | pop-alternative-rock | Pop rock, alternative, indie rock, arena rock, J-rock, punk |
 | metal-heavy-rock | Metalcore, power/symphonic metal, nu-metal, hard rock |
-| contemporary-folk-acoustic | Indie folk, folk pop, singer-songwriter, modern akustik pop |
-| roots-traditional-global | Geleneksel folk, Celtic, Çin geleneksel, reggae, global füzyon |
+| contemporary-folk-acoustic | Indie folk, folk pop, singer-songwriter, modern acoustic pop |
+| roots-traditional-global | Traditional folk, Celtic, Chinese traditional, reggae, global fusion |
 | country-americana | Country, Americana, bluegrass, country rock, rockabilly |
-| cinematic-pop-ballad | Cinematic pop, orkestral pop şarkıları, soundtrack-vari vokal balad |
-| cinematic-orchestral-epic | Film müziği, trailer, epik koro, senfonik soundtrack |
-| east-asian-modern | Mando/C/Canto/J-pop; elektronik, R&B, dance veya rock prodüksiyonla |
-| east-asian-ballad-heritage | Doğu Asya baladları, guofeng pop, akustik/orkestral Doğu Asya pop |
+| cinematic-pop-ballad | Cinematic pop, orchestral pop songs, soundtrack-style vocal ballad |
+| cinematic-orchestral-epic | Film score, trailer, epic choir, symphonic soundtrack |
+| east-asian-modern | Mando/C/Canto/J-pop; with electronic, R&B, dance or rock production |
+| east-asian-ballad-heritage | East Asian ballads, guofeng pop, acoustic/orchestral East Asian pop |
 
-Füzyon: iki tarzı da açıkça adlandır ("cinematic orchestral with Chinese folk
-instrumentation") ve iki paletin aranjmanı nasıl paylaştığını caption'da taahhüt et.
+Fusion: name both styles explicitly ("cinematic orchestral with Chinese folk
+instrumentation") and commit in the caption to how the two palettes share the
+arrangement.
 
-## 6. Resmi örnek caption'lar (kütüphaneden birebir)
+## 6. Official example captions (verbatim from the library)
 
-### Örnek A — Disco / Funk Pop (122 BPM, G minör, kadın vokal)
+### Example A: Disco / Funk Pop (122 BPM, G minor, female vocal)
 
 Global Metadata
 Basic Attributes: bpm is 122. key is G, and scale is minor. Disco / Funk Pop.
@@ -176,7 +183,7 @@ tension into the choruses. Short, sharp brass stabs act as rhythmic accents. Bac
 vocal shouts and ad-libs are panned wide to enhance the stereo width. Reverb tails on the
 snare and synth pads create a sense of a large, open performance space.
 
-### Örnek B — Acoustic Folk / Mandopop Ballad (146 BPM, Bb majör, erkek vokal)
+### Example B: Acoustic Folk / Mandopop Ballad (146 BPM, Bb major, male vocal)
 
 Global Metadata
 Basic Attributes: bpm is 146. key is Bb, and scale is major. Acoustic Folk / Mandopop Ballad.
@@ -225,7 +232,7 @@ layer that expands the sonic space. There are no abrupt transitional effects; in
 arrangement evolves through the gradual addition and subtraction of instrumental layers to
 shape the song's dynamics.
 
-### Örnek C — Vocal Jazz / Jazz Ballad (62 BPM, Bb majör, kadın vokal)
+### Example C: Vocal Jazz / Jazz Ballad (62 BPM, Bb major, female vocal)
 
 Global Metadata
 Basic Attributes: bpm is 62. key is Bb, and scale is major. Vocal Jazz / Jazz Ballad.
@@ -276,7 +283,7 @@ embellishment, adding a layer of melancholic color in the upper register during 
 emotional peak. The overall spatial mix places the piano slightly left, the bass
 center-low, and the brass slightly right, creating a balanced, live-room stereo image.
 
-### Örnek D — Cinematic Orchestral / Epic Chinese Folk Fusion (128 BPM, Eb minör, erkek + koro)
+### Example D: Cinematic Orchestral / Epic Chinese Folk Fusion (128 BPM, Eb minor, male + choir)
 
 Global Metadata
 Basic Attributes: bpm is 128. key is Eb, and scale is minor. Cinematic Orchestral / Epic
@@ -339,54 +346,63 @@ the thematic imagery of nature and vastness.
 
 ## 7. Pre-flight checklist
 
-- [ ] Her bölüm tag'i kendi satırında yalnız duruyor
-- [ ] Vokal cinsiyeti + tını açıkça yazılı (veya "instrumental" beyan edilmiş + lead
-      enstrüman adlandırılmış)
-- [ ] Caption'da TAM 3 başlık var: Global Metadata → Vocal Details → Arrangement (bu sırada)
-- [ ] Arrangement timeline olarak okunuyor: bölüm başına giriş, çıkış, değişim, yoğunluk
-- [ ] BPM/key sadece gerçekten isteniyorsa var; uydurma hassasiyet yok
-- [ ] Caption'da alıntılanmış şarkı sözü satırı yok
-- [ ] Açık dışlamalar/gereksinimler caption'ın tamamında çelişkisiz hayatta
-- [ ] ~250–450 kelime — spesifik ama makale değil
+- [ ] Every section tag stands alone on its own line
+- [ ] Vocal gender + timbre stated explicitly (or "instrumental" declared + the lead
+      instrument named)
+- [ ] The caption has EXACTLY 3 sections: Global Metadata → Vocal Details → Arrangement
+      (in this order)
+- [ ] The arrangement reads as a timeline: per-section entry, exit, change, density
+- [ ] BPM/key present only when truly wanted; no invented precision
+- [ ] No quoted song lyric lines inside the caption
+- [ ] Explicit exclusions/requirements survive without contradiction across the whole
+      caption
+- [ ] ~250–450 words: specific but not an essay
 
-## 8. Comfy workflow kontrolleri (audio_minimax_music_3)
+## 8. Comfy workflow controls (audio_minimax_music_3)
 
-- **caption**: 3 bölümlü müzik tanımı (yukarıdaki yapı).
-- **lyrics**: bölüm tag'li sözler (`[Intro]`, `[Verse]`, `[Chorus]`, `[Bridge]`,
+- **caption**: the 3-section music description (structure above).
+- **lyrics**: the words with section tags (`[Intro]`, `[Verse]`, `[Chorus]`, `[Bridge]`,
   `[Instrumental]`, `[Outro]`...).
-- **max_duration**: saniye cinsinden hedef süre (şablon 60; model ~300 sn / 5 dk'ya
-  kadar). Uzun şarkı = daha çok zaman + VRAM.
-- **seed**: sabit tut → aynı şarkı; değiştir → farklı take.
-- **tiled_decode**: audio VAE'yi bindirmeli tile'larla decode eder, VRAM'i düşürür
-  (uzun şarkı/düşük VRAM için). Biraz yavaş + tile sınırında küçük dikiş riski;
-  yüksek VRAM'de en iyi kalite için KAPALI.
-- Çıktı: 32 kHz 16-bit stereo, `output/audio/audio_minimax_music3.mp3`.
-- Model dosyaları (Shared models kökünde): `minimax_music3_dit_fp16.safetensors`
-  (diffusion_models/, INT8 varyantı `minimax_music3_dit_int8_convrot.safetensors` düşük
-  VRAM için), `minimax_music3_text_encoder_pruned_int8_convrot.safetensors`
+- **max_duration**: target duration in seconds (template 60; model up to ~300 s / 5
+  min). Longer song = more time + VRAM.
+- **seed**: keep fixed → same song; change → different take.
+- **tiled_decode**: decodes the audio VAE with overlapping tiles, lowers VRAM (for long
+  songs/low VRAM). Slightly slower + small seam risk at tile boundaries; OFF for best
+  quality on high VRAM.
+- Output: 32 kHz 16-bit stereo, `output/audio/audio_minimax_music3.mp3`.
+- Model files (under the Shared models root): `minimax_music3_dit_fp16.safetensors`
+  (diffusion_models/, with an INT8 variant `minimax_music3_dit_int8_convrot.safetensors`
+  for low VRAM), `minimax_music3_text_encoder_pruned_int8_convrot.safetensors`
   (text_encoders/), `minimax_music3_dav.safetensors` (vae/).
 
-## 9. Resmi rewriter skill'i (bu skill'in library/ klasörü = o skill'in kütüphanesi)
+## 9. The official rewriter skill (this skill's library/ folder = that skill's library)
 
-MiniMax'ın resmi `music-caption-rewriter` skill'i kısa bir tanımı + opsiyonel tag'li
-lyrics'i tam yapılandırılmış caption'a çevirir; 1000 referans caption'lık kütüphaneden
-beslenir. Kütüphanenin tamamı bu skill'in `library/` klasöründedir (genre-router.md,
-18 index, 1000 template). Kullanım deseni (resmi SKILL.md'den):
+MiniMax's official `music-caption-rewriter` skill turns a short description + optional
+tagged lyrics into a fully structured caption; it is fed by a library of 1000 reference
+captions. The entire library lives in this skill's `library/` folder (genre-router.md,
+18 indexes, 1000 templates). Usage pattern (from the official SKILL.md):
 
-1. Girdilerden Music Brief kur (explicit/tagged/inferred/unspecified sınıflaması).
-2. Açık kısıtları çöz; öncelik: açık kullanıcı gereksinimleri > tag direktifleri
-   (bölümünde) > caption ima'ları > referans özellikleri > muhafazakâr varsayılanlar.
-3. `genre-router.md` → 1 birincil (+füzyonda 1 ikincil) aile; SADECE o index'leri oku.
-4. Index kartlarından max 3 referans seç, farklı rollerle: Foundation (en yakın kimlik),
-   Modifier (istenen ikincil boyut), Arrangement (timeline mantığı).
-5. SADECE seçilen template dosyalarını aç; cümle/tam yapı kopyalama, brief etrafında
-   yeniden sentezle. Template'in key/BPM/vokal/hikaye detaylarını devralma.
-6. Bölüm bölüm timeline tasarla; 3 başlıkla render et; checklist'i doğrula.
+1. Build a Music Brief from the inputs (explicit/tagged/inferred/unspecified
+   classification).
+2. Resolve explicit constraints; priority: explicit user requirements > tag directives
+   (within their section) > caption implications > reference features > conservative
+   defaults.
+3. `genre-router.md` → 1 primary (+1 secondary on fusion) family; read ONLY those
+   indexes.
+4. Pick max 3 references from the index cards, with different roles: Foundation
+   (closest identity), Modifier (desired secondary dimension), Arrangement (timeline
+   logic).
+5. Open ONLY the selected template files; do not copy sentences/whole structures,
+   re-synthesize around the brief. Do not inherit the template's key/BPM/vocal/story
+   details.
+6. Design the timeline section by section; render it with the 3 sections; verify the
+   checklist.
 
-## 10. Model limitleri (resmi README)
+## 10. Model limits (official README)
 
-- Inference CUDA gerektirir; yalnızca non-streaming.
-- Metin prompt'u ~5000 token ile sınırlı.
-- Ses üretimi max 9000 akustik frame (25 fps → 360 sn; ComfyUI widget'ı 300 sn üst sınır).
-- Tag'ler/açıklamalar sembolik GARANTİ değil, üretken kontroldür: tempo, ton,
-  enstrümantasyon, sözler, yapı birebir tutmayabilir.
+- Inference requires CUDA; non-streaming only.
+- The text prompt is capped at ~5000 tokens.
+- Audio generation max 9000 acoustic frames (25 fps → 360 s; the ComfyUI widget has a
+  300 s upper bound).
+- Tags/descriptions are generative control, not a symbolic GUARANTEE: tempo, key,
+  instrumentation, lyrics, structure may not match exactly.

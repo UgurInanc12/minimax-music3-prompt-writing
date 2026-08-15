@@ -11,104 +11,115 @@ metadata:
     related_skills: [comfyui-desktop-windows, ltx25-prompt-writing, zimage-prompt-writing]
 ---
 
-# MiniMax Music 3 Prompt Yazma (resmi rehber + resmi skill kütüphanesi)
+# MiniMax Music 3 Prompt Writing (official guide + official skill library)
 
 ## When to Use
 
-- MiniMax Music 3 ile şarkı/müzik üretirken prompt yazılacaksa (bu makinede ComfyUI
-  `audio_minimax_music_3` workflow'u).
-- Kullanıcı şarkı fikri, tarz veya duygu verdiğinde → bu skill'in prosedürüyle
-  Caption + Lyrics ikilisini üret.
+- When writing prompts to generate songs/music with MiniMax Music 3 (the ComfyUI
+  `audio_minimax_music_3` workflow on this machine).
+- When the user provides a song idea, style, or emotion → produce the Caption + Lyrics
+  pair using this skill's procedure.
 
-Kaynaklar (2026-08'de incelendi):
-- Comfy resmi tutorial: `https://docs.comfy.org/tutorials/audio/minimax/minimax-music-3`
+Sources (reviewed 2026-08):
+- Official Comfy tutorial: `https://docs.comfy.org/tutorials/audio/minimax/minimax-music-3`
 - Prompting guide (HF Space): `https://huggingface.co/spaces/multimodalart/minimax-music3-prompting-guide`
-- Resmi `music-caption-rewriter` skill'i: `github.com/MiniMax-AI/MiniMax-Music3/skills/music-caption-rewriter`
-  (SKILL.md + genre-router + 18 family index + 1000 template → bu skill'in `library/` klasörüne kopyalandı)
+- Official `music-caption-rewriter` skill: `github.com/MiniMax-AI/MiniMax-Music3/skills/music-caption-rewriter`
+  (SKILL.md + genre-router + 18 family indexes + 1000 templates → copied into this
+  skill's `library/` folder)
 
-## Model Gerçekleri (prompt'u şekillendiren farklar — LTX/Z-Image ile KARIŞTIRMA)
+## Model Facts (the differences that shape the prompt: do NOT confuse with LTX/Z-Image)
 
-- **İKİ ayrı giriş, rolleri ASLA karıştırma**:
-  - **Caption** = müzik tanımı (tarz, tempo, duygu yayı, vokal, aranjman, prodüksiyon).
-    Tüm müzikal kontrol BURADA. Model onu zaman içinde takip eder (tek global etiket değil).
-  - **Lyrics** = söylenecek sözler + köşeli parantez bölüm tag'leri (yapı direktifleri).
-- **Tag'ler SATIR BAŞINDA yalnız durmalı**: `[verse] Morning light...` gibi tag ile aynı
-  satırdaki metin SESSİZCE SİLİNİR (input contract). Her tag kendi satırında.
-- **Süre ÜST SINIRDIR**: model sözler bitince stop-token ile doğal biter. Kısa lyrics =
-  kısa şarkı; 5 dakikalık şarkı için tam şarkılık bölüm + söz gerekir. `max_duration`
-  hedefi aşamaz (max 300 sn / 9000 frame, 25 fps).
-- **Vokal belirtilmezse → istenmeyen enstrümantal drift** (#1 hata). Vokalli şarkıda
-  cinsiyet + tını MUTLAKA açıkça yaz; enstrümantal ise "instrumental" de ve lead
-  melodiyi taşıyan enstrümanı adlandır.
-- **Dil**: Caption İngilizce (kullanıcı başka dil istemedikçe). Model çok dilli vokal
-  destekler; lyrics şarkının dilinde yazılabilir.
-- **Token limiti**: metin prompt'u ~5000 token ile sınırlı. Caption hedefi 250–450 kelime.
-- Mimari: 8B Global LLM (uzun yapı) + 0.6B Local LLM (akustik detay) + Flow Matching
-  sentez. Çıktı 32 kHz 16-bit stereo. Tag'ler sembolik GARANTİ değil, üretken kontroldür:
-  tempo/ton/enstrüman birebir tutmayabilir.
+- **TWO separate inputs; NEVER mix their roles**:
+  - **Caption** = music description (style, tempo, emotional arc, vocals, arrangement,
+    production). ALL musical control lives HERE. The model follows it over time (not as
+    a single global tag).
+  - **Lyrics** = the words to be sung + square-bracket section tags (structural
+    directives).
+- **Tags must stand alone AT THE START OF THEIR LINE**: text on the same line as a
+  tag, such as `[verse] Morning light...`, is SILENTLY DELETED (input contract). Each
+  tag on its own line.
+- **Duration is an UPPER BOUND**: the model ends naturally with a stop-token once the
+  lyrics run out. Short lyrics = short song; a 5-minute song needs a full song's worth
+  of sections + lyrics. It cannot exceed the `max_duration` target (max 300 s / 9000
+  frames, 25 fps).
+- **No vocal specified → unwanted instrumental drift** (the #1 mistake). In a song
+  with vocals, ALWAYS state gender + timbre explicitly; if instrumental, say
+  "instrumental" and name the instrument carrying the lead melody.
+- **Language**: Caption in English (unless the user asks for another language). The
+  model supports multilingual vocals; lyrics can be written in the song's language.
+- **Token limit**: the text prompt is capped at ~5000 tokens. Caption target is
+  250–450 words.
+- Architecture: 8B Global LLM (long-range structure) + 0.6B Local LLM (acoustic
+  detail) + Flow Matching synthesis. Output is 32 kHz 16-bit stereo. Tags are
+  generative control, not a symbolic GUARANTEE: tempo/key/instrumentation may not
+  match exactly.
 
-## Caption Yapısı — TAM 3 başlık, bu sırada
+## Caption Structure: EXACTLY 3 sections, in this order
 
 ### 1. Global Metadata
-- **Basic Attributes** — genre + subgenre, tempo; key/scale SADECE gerçekten isteniyorsa
+- **Basic Attributes**: genre + subgenre, tempo; key/scale ONLY when truly wanted
   ("bpm is 122. key is G, and scale is minor. Disco / Funk Pop.").
-- **Global Emotional Progression** — açılıştan kapanışa duygu yayı HİKAYE olarak:
-  nerede başlar, nerede zirve yapar, nasıl çözülür.
-- **Application Scenarios & Imagery** — şarkının ait olduğu sahne (gece sürüşü, loş oda,
-  çatı geri sayımı). Sahne, sıfatlardan daha iyi mood çıpalar.
-- **Sonics & Production Profile** — mix karakteri: stereo genişliği, frekans dengesi,
-  dinamikler (polished/compressed vs. natural/uncompressed).
+- **Global Emotional Progression**: the emotional arc from opening to closing AS A
+  STORY: where it starts, where it peaks, how it resolves.
+- **Application Scenarios & Imagery**: the scene the song belongs to (night drive,
+  dimly lit room, rooftop countdown). A scene anchors mood better than adjectives do.
+- **Sonics & Production Profile**: mix character: stereo width, frequency balance,
+  dynamics (polished/compressed vs. natural/uncompressed).
 
 ### 2. Vocal Details
-- **Vocal Gender & Timbre** — daima açıkça: "Singer A (Female), a warm mezzo-soprano
+- **Vocal Gender & Timbre**: always explicit: "Singer A (Female), a warm mezzo-soprano
   with a breathy low register".
-- **Vocal Style** — bölüm başına delivery/dinamik: verse'te yakın ve yumuşak,
-  chorus'ta belted.
-- **Harmony/Backing Vocals** — double'lar, stacked harmoniler, call-and-response, nerede.
-- **Vocal FX** — ölçülü: reverb, delay throw, saturation; her biri nerede.
-- Enstrümantal: parça enstrümantal olduğunu söyle + lead melodik rolü taşıyan enstrümanı adlandır.
+- **Vocal Style**: delivery/dynamics per section: close and soft in the verse, belted
+  in the chorus.
+- **Harmony/Backing Vocals**: doubles, stacked harmonies, call-and-response, and where.
+- **Vocal FX**: in moderation: reverb, delay throw, saturation; each one, and where.
+- Instrumental: state that the track is instrumental + name the instrument carrying
+  the lead melodic role.
 
-### 3. Arrangement — EKİPMAN LİSTESİ DEĞİL, TIMELINE
-- **Instrument Lifecycle (Primary/Secondary)** — baştan sona ne çıpalar; ne girer, çıkar,
-  dönüşür.
-- **Groove & Foundation Progression** — ritmik temel ve yoğunluk evrimi bölüm bölüm
-  (verse'te davullar ne yapar, chorus'ta ne iner, bridge'te ne çekilir).
-- **Embellishments, Textures & Spatial FX** — riser, sweep, ear candy, reverb kuyrukları;
-  sadece ilgili yerlerde.
-- Her bölüm için ne girer/çıkar/değişir/yoğunlaşır yaz; enstrüman davranışı sürekli
-  olsun ki geçişler müzikal kalsın.
+### 3. Arrangement: a TIMELINE, NOT an equipment list
+- **Instrument Lifecycle (Primary/Secondary)**: what anchors from start to finish;
+  what enters, exits, transforms.
+- **Groove & Foundation Progression**: the rhythmic foundation and its density
+  evolution section by section (what the drums do in the verse, what drops in the
+  chorus, what pulls back in the bridge).
+- **Embellishments, Textures & Spatial FX**: risers, sweeps, ear candy, reverb tails;
+  only where relevant.
+- Write what enters/exits/changes/intensifies for every section; keep instrument
+  behavior continuous so transitions stay musical.
 
-## Yazım Kuralları
+## Writing Rules
 
-1. **Sahte hassasiyet UYDURMA**: BPM/key'i gerçekten istemiyorsan yazma; aralık veya
-   niteliksel tempo ("driving", "unhurried") modele müzikal alan bırakır.
-2. **Kendinle sessizce çelişme**: açık vokal cinsiyeti, zorunlu enstrüman, tempo sınırı,
-   dışlama → caption'ın TAMAMINDA hayatta kalmalı.
-3. **Öncelik sırası** (çelişkide): açık kullanıcı gereksinimleri → bölüm-tag'i direktifleri
-   (kendi bölümünde) → caption'ın güçlü ima'ları → genre varsayılanları.
-4. **Enerji yayı yaz**: gerilim → çözülme → nefes → zirve hikayesi, statik tanımdan
-   daha iyi yapı üretir.
-5. **Şarkı sözünü caption'a KOYMA**: caption müziği anlatır; sözler lyrics girişinde.
-6. Lyrics'teki tag'ler YAPISAL talimattır; söz metni sadece duygu taşır. Tag'ler ayrıca
-   bölümün lokal aranjmanını değiştirebilir (`[solo]`) ama global genre'ı değiştirmez.
+1. **Do NOT invent fake precision**: don't state BPM/key unless truly wanted; a range
+   or qualitative tempo ("driving", "unhurried") leaves the model musical room.
+2. **Do not silently contradict yourself**: explicit vocal gender, mandatory
+   instrument, tempo bound, exclusions → must survive across the ENTIRE caption.
+3. **Priority order** (on conflict): explicit user requirements → section-tag
+   directives (within their section) → strong caption implications → genre defaults.
+4. **Write an energy arc**: a story of tension → release → breath → peak produces
+   better structure than a static description.
+5. **Do NOT put song lyrics in the caption**: the caption describes the music; the
+   words go in the lyrics input.
+6. Tags in the lyrics are STRUCTURAL instructions; the lyric text only carries
+   emotion. Tags can also change a section's local arrangement (`[solo]`) but not the
+   song's global genre.
 
-## Lyrics Tag Bankası
+## Lyrics Tag Bank
 
 `[intro]` `[verse]` `[pre-chorus]` `[chorus]` `[post-chorus]` `[bridge]`
-`[instrumental]` `[solo]` `[outro]` — her biri kendi satırında.
+`[instrumental]` `[solo]` `[outro]`: each one on its own line.
 
-Varsayılan iskelet: `Intro → Verse → Pre-Chorus → Chorus → Verse → Chorus →
-Bridge → Final Chorus → Outro`.
+Default skeleton: `Intro → Verse → Pre-Chorus → Chorus → Verse → Chorus → Bridge →
+Final Chorus → Outro`.
 
-## Style Families (resmi kütüphane router'ı — 18 aile)
+## Style Families (official library router: 18 families)
 
-Tür adı verirken bu ailelerin dilini kullan; `emotional/epic/dark/modern/cinematic`
-genre değil MODIFIER'dır. Tam router tablosu + alias'lar + füzyon kuralları:
-`library/genre-router.md`.
+When naming a genre, use the language of these families;
+`emotional/epic/dark/modern/cinematic` is a MODIFIER, not a genre. Full router table +
+aliases + fusion rules: `library/genre-router.md`.
 
-| Aile | Kapsam |
+| Family | Scope |
 |---|---|
-| general-pop-ballad | Pop, pop balad, genel duygusal şarkılar (fallback) |
+| general-pop-ballad | Pop, pop ballad, general emotional songs (fallback) |
 | dance-pop-disco-funk | Dance-pop, nu-disco, funk-pop, groove pop |
 | club-edm-house-trance | EDM, house, trance, hardstyle, festival electronic |
 | electronic-synth-ambient-pop | Synth-pop, dream pop, darkwave, retrowave |
@@ -116,60 +127,64 @@ genre değil MODIFIER'dır. Tam router tablosu + alias'lar + füzyon kuralları:
 | hip-hop-rap | Hip-hop, rap, trap, drill, lo-fi hip-hop |
 | soul-blues-gospel | Soul, blues, gospel, worship |
 | jazz-swing-big-band | Vocal jazz, big band, swing, bossa nova, lounge |
-| traditional-vocal-stage | Crooner, doo-wop, a cappella, müzikal, cabaret |
+| traditional-vocal-stage | Crooner, doo-wop, a cappella, musical theater, cabaret |
 | pop-alternative-rock | Pop rock, alt rock, indie rock, arena, punk |
 | metal-heavy-rock | Metalcore, power/symphonic metal, nu-metal, hard rock |
 | contemporary-folk-acoustic | Indie folk, folk pop, singer-songwriter |
-| roots-traditional-global | Geleneksel folk, Celtic, reggae, global füzyon |
+| roots-traditional-global | Traditional folk, Celtic, reggae, global fusion |
 | country-americana | Country, Americana, bluegrass, rockabilly |
-| cinematic-pop-ballad | Cinematic pop, orkestral pop şarkıları |
-| cinematic-orchestral-epic | Film müziği, trailer, epik koro, senfonik |
-| east-asian-modern | Mando/C/Canto/J-pop + elektronik/R&B/rock prodüksiyon |
-| east-asian-ballad-heritage | Doğu Asya baladları, guofeng pop |
+| cinematic-pop-ballad | Cinematic pop, orchestral pop songs |
+| cinematic-orchestral-epic | Film score, trailer, epic choir, symphonic |
+| east-asian-modern | Mando/C/Canto/J-pop + electronic/R&B/rock production |
+| east-asian-ballad-heritage | East Asian ballads, guofeng pop |
 
-Füzyon: iki tarzı da açıkça adlandır ("cinematic orchestral with Chinese folk
-instrumentation"); "X with Y influences" → birincil X, ikincil Y.
+Fusion: name both styles explicitly ("cinematic orchestral with Chinese folk
+instrumentation"); "X with Y influences" → primary X, secondary Y.
 
-## Prompt İnşa Prosedürü (fikir → final çıktı)
+## Prompt Building Procedure (idea → final output)
 
-1. Kullanıcının fikrinden **Music Brief** çıkar: tür, mood/yay, tempo, vokal varlığı/
-   cinsiyet/tını, enstrümanlar, bölüm yapısı, dışlamalar. Her değeri `explicit / tagged /
-   inferred / unspecified` olarak sınıfla; hassas değer UYDURMA.
-2. Türü aileye yönlendir (`library/genre-router.md`); gerekirse family index'inden
-   (`library/index-*.md`) 1–3 kart seç (Foundation/Modifier/Arrangement rolleri),
-   SADECE seçilen template'leri aç (`library/templates/<id>.txt`). Template'ten cümle
-   veya tam yapı KOPYALAMA; brief etrafında yeniden sentezle.
-3. İngilizce caption yaz: 3 başlık, ~250–450 kelime, timeline aranjman, enerji yayı.
-4. Lyrics yaz: her tag kendi satırında; bölümler arası boş satır; söz metni duygu taşır.
-   Kullanıcı Türkçe şarkı isterse lyrics Türkçe olabilir, caption yine İngilizce.
-5. Pre-flight checklist'i (`references/prompting-guide-full.md` sonunda) doğrula.
-6. ComfyUI widget'larına yerleştir: caption → `caption`, lyrics → `lyrics`,
-   `max_duration` (sn; şablon 60, max 300), `seed`.
+1. Extract a **Music Brief** from the user's idea: genre, mood/arc, tempo, vocal
+   presence/gender/timbre, instruments, section structure, exclusions. Classify every
+   value as `explicit / tagged / inferred / unspecified`; do NOT invent precise values.
+2. Route the genre to a family (`library/genre-router.md`); if needed, pick 1–3 cards
+   from the family index (`library/index-*.md`) (Foundation/Modifier/Arrangement
+   roles), and open ONLY the selected templates (`library/templates/<id>.txt`). Do NOT
+   COPY sentences or whole structures from templates; re-synthesize around the brief.
+3. Write the caption in English: 3 sections, ~250–450 words, timeline arrangement,
+   energy arc.
+4. Write the lyrics: each tag on its own line; blank lines between sections; the lyric
+   text carries the emotion. If the user wants a Turkish song, the lyrics may be
+   Turkish, but the caption stays English.
+5. Verify against the pre-flight checklist (at the end of
+   `references/prompting-guide-full.md`).
+6. Place into the ComfyUI widgets: caption → `caption`, lyrics → `lyrics`,
+   `max_duration` (s; template 60, max 300), `seed`.
 
-## Bu makine — ComfyUI parametreleri (audio_minimax_music_3 workflow'u)
+## This machine: ComfyUI parameters (audio_minimax_music_3 workflow)
 
 - Path: `...\ComfyUI\user\default\workflows\audio_minimax_music_3.json`
   (subgraph: "Text to Music (MiniMax Music 3)").
-- Loader'lar: UNET `minimax_music3_dit_fp16.safetensors`, CLIP
+- Loaders: UNET `minimax_music3_dit_fp16.safetensors`, CLIP
   `minimax_music3_text_encoder_pruned_int8_convrot.safetensors` (type: minimax),
-  VAE `minimax_music3_dav.safetensors` — hepsi Shared models kökünde mevcut.
-- KSampler: steps=30, cfg=1.7, euler, simple, denoise=1. TextEncode widget'ları:
+  VAE `minimax_music3_dav.safetensors`: all available under the Shared models root.
+- KSampler: steps=30, cfg=1.7, euler, simple, denoise=1. TextEncode widgets:
   `max_duration=60`, `cfg_scale=1.7` (node default 1.5), `top_k=50`.
-- `tiled_decode` switch'i: uzun şarkılarda VRAM için ON (1536/64 tile); kısa şarkıda
-  en iyi kalite için OFF (tile dikişi riski sıfır).
-- Workflow'ta 3 UnloadAllModels node'u ekli (KSampler öncesi model zinciri, iki
-  VAEDecodeAudio latent zinciri) — dokunma.
-- Çıktı: `output/audio/audio_minimax_music3.mp3` (SaveAudioAdvanced).
-- Subgraph instance'ında hazır bir Lo-fi örnek caption + lyrics var — format örneği olarak okunabilir.
+- `tiled_decode` switch: ON for VRAM on long songs (1536/64 tiles); OFF for best
+  quality on short songs (zero tile-seam risk).
+- 3 UnloadAllModels nodes added in the workflow (model chain before KSampler, two
+  VAEDecodeAudio latent chains): do not touch.
+- Output: `output/audio/audio_minimax_music3.mp3` (SaveAudioAdvanced).
+- The subgraph instance contains a ready Lo-fi example caption + lyrics: it can be
+  read as a format example.
 
-## Destek dosyaları
+## Support files
 
-- `references/prompting-guide-full.md` — HF Space rehberi + Comfy tutorial'ın tam
-  distillenmiş içeriği: iki giriş kontratı, 3 başlığın alt elemanları, yazım kuralları,
-  4 tam resmi örnek caption, pre-flight checklist.
-- `library/genre-router.md` — resmi router: aile tablosu, alias'lar, füzyon kuralları,
-  fallback mantığı.
-- `library/index-*.md` — 18 aile index'i (kompakt kart tabloları: ID, tarz, tempo/key,
-  mood yayı, vokal ipucu, core palette, template yolu).
-- `library/templates/*.txt` — 1000 resmi referans caption (tam metin). SADECE router →
-  index → seçilen kart zincirinden aç; tümünü tarama.
+- `references/prompting-guide-full.md`: full distilled content of the HF Space guide +
+  the Comfy tutorial: the two-input contract, the sub-elements of the 3 sections,
+  writing rules, 4 complete official example captions, pre-flight checklist.
+- `library/genre-router.md`: the official router: family table, aliases, fusion rules,
+  fallback logic.
+- `library/index-*.md`: 18 family indexes (compact card tables: ID, style, tempo/key,
+  mood arc, vocal hint, core palette, template path).
+- `library/templates/*.txt`: 1000 official reference captions (full text). Open ONLY
+  via the router → index → selected card chain; do not scan all of them.
